@@ -1,0 +1,38 @@
+# Ignore everything
+*
+
+# Except these files and directories
+
+# Documentation 
+!/.gitignore
+!/README.md
+!/LICENSE
+!/CHANGELOG.md
+!/CONTRIBUTING.md
+!/docs/
+!/docs/**
+!/.github/
+!/.github/**
+
+# Global configuration
+!/AGENTS.md
+!/config.toml
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+
+# Agent definitions
+!/agents/
+!/agents/**
+
+# Agent shell scripts
+!/scripts/
+!/scripts/**
+
+# Themes
+!/themes/
+!/themes/**
+!/tmp/
+/tmp/*
+!/tmp/fixtures/
+!/tmp/fixtures/**
