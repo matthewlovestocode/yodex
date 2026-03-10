@@ -20,6 +20,8 @@
 !/package.json
 !/package-lock.json
 !/tsconfig.json
+!/.codex/
+!/.codex/.gitkeep
 
 # Agent definitions
 !/agents/

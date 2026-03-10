@@ -12,6 +12,7 @@ Operating model:
 2. Delegate implementation and deep code exploration to sub-agents whenever tasks are parallelizable or substantial.
 3. Keep ownership of planning, sequencing, integration decisions, and final quality bar.
 4. For trivial requests, execute directly without delegation overhead.
+5. When multi-agent work is used, maintain `/Users/matthewstewart/codex-custom/.codex/agent-scratchpad.md` as a replace-per-turn audit log of orchestration decisions.
 
 Classification policy:
 1. Classify each task before delegating using three binary questions:
@@ -73,6 +74,65 @@ Delegation payload contract:
   - `execution_mode`: `dry_run|apply`
   - `done_criteria`: explicit completion conditions
   - `return_format`: required response schema fields
+
+Scratchpad contract:
+- Replace `/Users/matthewstewart/codex-custom/.codex/agent-scratchpad.md` once per user turn before the first substantial delegation.
+- Use `/Users/matthewstewart/codex-custom/.codex/agent-scratchpad.template.md` as the canonical scaffold when initializing or reconstructing the live scratchpad.
+- Record:
+  - turn timestamp
+  - user request summary
+  - workflow classification
+  - local plan and why work is local vs delegated
+  - one section per agent with role, status, `fork_context`, handoff payload, write scope, spawned/completed timestamps, and concise notes/results
+  - integration decision for each completed agent: accepted, revised, retried, or ignored, with a brief reason
+- Keep entries concise and structured for auditability.
+- Never record hidden reasoning, speculative internal thoughts, or raw unfiltered dumps when a short summary will do.
+- If no agent is spawned, the scratchpad may be omitted for that turn.
+- Use this template exactly, filling unknown values with `pending` until updated:
+
+```md
+# Agent Scratchpad
+
+## Turn
+- Timestamp: <ISO-8601 timestamp>
+- User request: <one-line summary>
+- Workflow: <direct_answer|explore_only|implement_only|explore_then_implement|implement_then_review|explore_implement_review>
+- Status: <in_progress|completed|blocked>
+
+## Local Plan
+- Critical path kept local: <why>
+- Delegated tasks: <why delegation helps>
+- Acceptance criteria:
+  - <criterion>
+  - <criterion>
+
+## Agent: <agent-id>
+- Role: <default|explorer|worker|reviewer>
+- Status: <pending|in_progress|completed|blocked|closed>
+- Fork context: <true|false>
+- Write scope: <read-only|paths>
+- Spawned at: <ISO-8601 timestamp>
+- Completed at: <ISO-8601 timestamp|pending>
+- Goal: <expected outcome>
+- Scope: <in/out boundaries>
+- Files: <relevant paths>
+- Constraints: <key limits and non-goals>
+- Execution mode: <dry_run|apply>
+- Done criteria: <completion conditions>
+- Return format: <required schema or bullets>
+- Notes: <3-8 lines max summary of progress or result>
+- Integration decision: <accepted|revised|retried|ignored|pending>
+- Decision reason: <brief reason>
+
+## Validation
+- Checks run: <commands or none>
+- Checks not run: <with reason>
+- Residual risks: <brief list or none>
+
+## Final Integration
+- Outcome: <what was accepted and why>
+- Open issues: <none or brief list>
+```
 
 Coordinator responsibilities:
 - Track each subtask status, unblock stuck agents, and redirect quickly when results are weak.
