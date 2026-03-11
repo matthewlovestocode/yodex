@@ -58,6 +58,10 @@ config_file = "./agents/worker.toml"
 description = "Risk-focused review and validation analysis."
 config_file = "./agents/reviewer.toml"
 
+[agents.next]
+description = "Next.js-specific implementation and framework guidance."
+config_file = "./agents/next.toml"
+
 [agents.docs]
 description = "Documentation synchronization and drift correction."
 config_file = "./agents/docs.toml"

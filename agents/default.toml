@@ -81,13 +81,16 @@ Routing:
 1. Use the `explorer` agent for read-only codebase discovery, file/symbol lookup, config tracing, impact analysis, and root-cause investigation.
 2. Keep trivial lookups or questions local when the answer can be gathered faster than delegation overhead.
 3. Use the `worker` agent for non-trivial file or config modifications, especially when the task has clear file boundaries or can be validated independently.
-4. Do not use `explorer` for file modifications; reserve implementation work for `worker` or direct coordinator action only when delegation overhead is not justified.
-5. Use the `reviewer` agent for risk-focused review, regression analysis, and validation-gap assessment on higher-stakes or ambiguous changes.
-6. Use the `docs` agent for documentation synchronization, stale-claim cleanup, README or guide updates, and reconciling docs to code, config, tests, or workflows.
-7. After non-trivial implementation, explicitly evaluate whether docs that describe setup, usage, APIs, workflows, automations, or architecture now need updates.
-8. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
-9. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
-10. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
+4. Use the `next` agent for Next.js-owned implementation, including routing, server/client component boundaries, route handlers, server actions, metadata, middleware, caching, and other framework-specific concerns.
+5. Prefer the `next` agent over the generic `worker` when the task primarily concerns a Next.js app or files such as `app/**`, `pages/**`, `components/**` in a Next app, `next.config.*`, Next middleware, route handlers, or framework-driven rendering and data-fetching behavior.
+6. Do not use `explorer` for file modifications; reserve implementation work for `next`, `worker`, or direct coordinator action only when delegation overhead is not justified.
+7. Use the `reviewer` agent for risk-focused review, regression analysis, and validation-gap assessment on higher-stakes or ambiguous changes.
+8. Use the `docs` agent for documentation synchronization, stale-claim cleanup, README or guide updates, and reconciling docs to code, config, tests, or workflows.
+9. After non-trivial implementation, explicitly evaluate whether docs that describe setup, usage, APIs, workflows, automations, or architecture now need updates.
+10. When a docs task touches a Next.js app, prefer a `next` pass first or include equivalent Next.js context so the docs agent does not infer framework behavior from stale docs alone.
+11. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+12. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+13. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -105,6 +108,8 @@ Docs delegation rules:
 - Use the `docs` agent when documentation must be synchronized to existing code or implementation changes.
 - Docs handoffs must identify the implementation files or behaviors that are the source of truth, plus the doc files that likely need updates.
 - Prefer docs work after implementation unless the task is a pure docs-sync correction with no code changes.
+- When the docs task concerns a Next.js app, docs handoffs must include the router type when known, relevant framework notes, and source-of-truth files such as `app/**`, `pages/**`, layouts, route handlers, middleware, `next.config.*`, and related tests.
+- For Next.js doc sync, prefer a `next` agent result as upstream context whenever the implementation or framework behavior is non-trivial.
 
 Docs handoff template:
 - `docs`
@@ -112,12 +117,32 @@ Docs handoff template:
 goal: synchronize repository documentation with the implemented code, config, tests, and workflows
 scope: modify only the documentation or explanatory artifacts needed to remove drift and clarify current behavior
 files: source-of-truth code/config/test files plus candidate docs such as README, docs pages, setup guides, API references, and contributor notes
-constraints: treat code, tests, and config as source of truth, remove stale claims, avoid inventing undocumented behavior, keep edits bounded
+constraints: treat code, tests, and config as source of truth, remove stale claims, avoid inventing undocumented behavior, keep edits bounded; when applicable include router_type, framework_notes, and Next.js source-of-truth files from the coordinator or next agent
 execution_mode: apply
 source_repo: n/a
 target_repo: n/a
 done_criteria: update the relevant docs so they accurately reflect the current implementation and call out any truth gaps that require code changes
 return_format: summary, files_changed, stale_claims_fixed, checks_run, checks_not_run, residual_risks, blocked_by
+```
+
+Next.js delegation rules:
+- Use the `next` agent when the task is primarily inside a Next.js application or depends on Next.js framework behavior.
+- Next handoffs must identify whether the repo uses the App Router, Pages Router, or a mixed setup when that is knowable from local context.
+- Next handoffs should call out any relevant server/client boundary, routing, rendering, caching, metadata, middleware, or server action concerns.
+- When documentation also needs updating, the coordinator should use the `next` result as source context for the docs handoff rather than asking the docs agent to infer framework behavior unaided.
+
+Next.js handoff template:
+- `next`
+```text
+goal: implement the requested change within the Next.js app while preserving framework correctness and repo conventions
+scope: modify only the Next.js-owned files and adjacent wiring needed for the requested behavior
+files: relevant Next.js app files such as app routes, pages, layouts, components, route handlers, middleware, next config, and related tests
+constraints: follow the repo's existing Next.js patterns, keep server/client boundaries correct, avoid unnecessary clientification, keep rendering and caching behavior intentional
+execution_mode: apply
+source_repo: n/a
+target_repo: n/a
+done_criteria: complete the requested Next.js change, run the most relevant checks, and report any framework-specific constraints or tradeoffs
+return_format: summary, files_changed, checks_run, checks_not_run, framework_notes, residual_risks, blocked_by
 ```
 
 Porting delegation rules:
@@ -199,7 +224,7 @@ Scratchpad contract:
   - <criterion>
 
 ## Agent: <agent-id>
-- Role: <default|explorer|worker|reviewer|docs>
+- Role: <default|explorer|worker|reviewer|docs|next>
 - Status: <pending|in_progress|completed|blocked|closed>
 - Fork context: <true|false>
 - Write scope: <read-only|paths>
