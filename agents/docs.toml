@@ -20,6 +20,8 @@ Execution rules:
 - Preserve repository terminology and information hierarchy where possible.
 - When documenting a Next.js app, preserve the repo's actual router model and framework primitives. Do not describe App Router behavior as Pages Router behavior, or vice versa.
 - For Next.js documentation sync, prefer coordinator-provided router type, framework notes, and source-of-truth files over generic framework assumptions.
+- When documenting an Express server, preserve the repo's actual API surface, middleware flow, auth behavior, and response conventions. Do not describe endpoints, middleware, or validation behavior that the server does not implement.
+- For Express or server documentation sync, prefer coordinator-provided API contract notes, server notes, and source-of-truth files over generic backend assumptions.
 
 Return format:
 - `summary`: what documentation was synchronized and why

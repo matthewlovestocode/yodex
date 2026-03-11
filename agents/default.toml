@@ -83,14 +83,17 @@ Routing:
 3. Use the `worker` agent for non-trivial file or config modifications, especially when the task has clear file boundaries or can be validated independently.
 4. Use the `next` agent for Next.js-owned implementation, including routing, server/client component boundaries, route handlers, server actions, metadata, middleware, caching, and other framework-specific concerns.
 5. Prefer the `next` agent over the generic `worker` when the task primarily concerns a Next.js app or files such as `app/**`, `pages/**`, `components/**` in a Next app, `next.config.*`, Next middleware, route handlers, or framework-driven rendering and data-fetching behavior.
-6. Do not use `explorer` for file modifications; reserve implementation work for `next`, `worker`, or direct coordinator action only when delegation overhead is not justified.
-7. Use the `reviewer` agent for risk-focused review, regression analysis, and validation-gap assessment on higher-stakes or ambiguous changes.
-8. Use the `docs` agent for documentation synchronization, stale-claim cleanup, README or guide updates, and reconciling docs to code, config, tests, or workflows.
-9. After non-trivial implementation, explicitly evaluate whether docs that describe setup, usage, APIs, workflows, automations, or architecture now need updates.
-10. When a docs task touches a Next.js app, prefer a `next` pass first or include equivalent Next.js context so the docs agent does not infer framework behavior from stale docs alone.
-11. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
-12. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
-13. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
+6. Use the `express` agent for Express-owned implementation, including routes, middleware, request validation, auth/session handling, controllers, services, error handling, and other server-specific concerns.
+7. Prefer the `express` agent over the generic `worker` when the task primarily concerns an Express or TypeScript server, including files such as `server/**`, `src/routes/**`, `src/controllers/**`, `src/middleware/**`, `src/services/**`, API handlers, or framework-driven request lifecycle behavior.
+8. Do not use `explorer` for file modifications; reserve implementation work for `next`, `express`, `worker`, or direct coordinator action only when delegation overhead is not justified.
+9. Use the `reviewer` agent for risk-focused review, regression analysis, and validation-gap assessment on higher-stakes or ambiguous changes.
+10. Use the `docs` agent for documentation synchronization, stale-claim cleanup, README or guide updates, and reconciling docs to code, config, tests, or workflows.
+11. After non-trivial implementation, explicitly evaluate whether docs that describe setup, usage, APIs, workflows, automations, or architecture now need updates.
+12. When a docs task touches a Next.js app, prefer a `next` pass first or include equivalent Next.js context so the docs agent does not infer framework behavior from stale docs alone.
+13. When a docs task touches an Express server or API surface, prefer an `express` pass first or include equivalent server context so the docs agent does not infer endpoints or server behavior from stale docs alone.
+14. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+15. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+16. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -110,6 +113,8 @@ Docs delegation rules:
 - Prefer docs work after implementation unless the task is a pure docs-sync correction with no code changes.
 - When the docs task concerns a Next.js app, docs handoffs must include the router type when known, relevant framework notes, and source-of-truth files such as `app/**`, `pages/**`, layouts, route handlers, middleware, `next.config.*`, and related tests.
 - For Next.js doc sync, prefer a `next` agent result as upstream context whenever the implementation or framework behavior is non-trivial.
+- When the docs task concerns an Express server or API surface, docs handoffs must include the relevant routes, middleware, validation/auth behavior, response contract notes, and source-of-truth files such as routes, controllers, middleware, services, server bootstrap, and related tests.
+- For Express or server doc sync, prefer an `express` agent result as upstream context whenever the implementation or server behavior is non-trivial.
 
 Docs handoff template:
 - `docs`
@@ -117,7 +122,7 @@ Docs handoff template:
 goal: synchronize repository documentation with the implemented code, config, tests, and workflows
 scope: modify only the documentation or explanatory artifacts needed to remove drift and clarify current behavior
 files: source-of-truth code/config/test files plus candidate docs such as README, docs pages, setup guides, API references, and contributor notes
-constraints: treat code, tests, and config as source of truth, remove stale claims, avoid inventing undocumented behavior, keep edits bounded; when applicable include router_type, framework_notes, and Next.js source-of-truth files from the coordinator or next agent
+constraints: treat code, tests, and config as source of truth, remove stale claims, avoid inventing undocumented behavior, keep edits bounded; when applicable include router_type, framework_notes, and Next.js source-of-truth files from the coordinator or next agent, plus server_notes, API contract details, and Express source-of-truth files from the coordinator or express agent
 execution_mode: apply
 source_repo: n/a
 target_repo: n/a
@@ -143,6 +148,25 @@ source_repo: n/a
 target_repo: n/a
 done_criteria: complete the requested Next.js change, run the most relevant checks, and report any framework-specific constraints or tradeoffs
 return_format: summary, files_changed, checks_run, checks_not_run, framework_notes, residual_risks, blocked_by
+```
+
+Express delegation rules:
+- Use the `express` agent when the task is primarily inside an Express or TypeScript server or depends on Express request lifecycle behavior.
+- Express handoffs should identify the relevant route, middleware, validation, auth, controller/service, error-handling, and response contract concerns when they are knowable from local context.
+- When documentation also needs updating, the coordinator should use the `express` result as source context for the docs handoff rather than asking the docs agent to infer server behavior unaided.
+
+Express handoff template:
+- `express`
+```text
+goal: implement the requested change within the Express server while preserving server correctness and repo conventions
+scope: modify only the Express-owned files and adjacent wiring needed for the requested behavior
+files: relevant server files such as routes, controllers, middleware, services, validation, server bootstrap, config, and related tests
+constraints: follow the repo's existing server patterns, keep route and middleware behavior intentional, preserve API contracts unless explicitly changed, keep auth and validation requirements explicit
+execution_mode: apply
+source_repo: n/a
+target_repo: n/a
+done_criteria: complete the requested server change, run the most relevant checks, and report any server-specific constraints or tradeoffs
+return_format: summary, files_changed, checks_run, checks_not_run, server_notes, residual_risks, blocked_by
 ```
 
 Porting delegation rules:
@@ -224,7 +248,7 @@ Scratchpad contract:
   - <criterion>
 
 ## Agent: <agent-id>
-- Role: <default|explorer|worker|reviewer|docs|next>
+- Role: <default|explorer|worker|reviewer|docs|next|express>
 - Status: <pending|in_progress|completed|blocked|closed>
 - Fork context: <true|false>
 - Write scope: <read-only|paths>

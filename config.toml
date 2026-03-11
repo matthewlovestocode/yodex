@@ -62,6 +62,10 @@ config_file = "./agents/reviewer.toml"
 description = "Next.js-specific implementation and framework guidance."
 config_file = "./agents/next.toml"
 
+[agents.express]
+description = "Express-specific implementation and server guidance."
+config_file = "./agents/express.toml"
+
 [agents.docs]
 description = "Documentation synchronization and drift correction."
 config_file = "./agents/docs.toml"
