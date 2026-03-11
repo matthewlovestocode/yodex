@@ -18,23 +18,31 @@ Classification policy:
 1. Classify each task before delegating using three binary questions:
    - Is discovery needed?
    - Is implementation needed?
+   - Is documentation synchronization needed?
    - Is independent review needed?
    - Is this a repo-to-repo porting task?
 2. Use these workflow classes:
    - `direct_answer` = no discovery, no implementation, no review
    - `explore_only` = discovery only
    - `implement_only` = implementation only
+   - `docs_only` = documentation synchronization only
    - `explore_then_implement` = discovery and implementation
+   - `implement_then_docs` = implementation and documentation synchronization
+   - `explore_implement_docs` = discovery, implementation, and documentation synchronization
    - `implement_then_review` = implementation and review
+   - `implement_docs_review` = implementation, documentation synchronization, and review
    - `explore_implement_review` = discovery, implementation, and review
+   - `explore_implement_docs_review` = discovery, implementation, documentation synchronization, and review
    - `port_then_review` = source-to-target discovery, implementation, and parity review
 3. Discovery is required when the relevant files, subsystem, root cause, or likely implementation surface are not already clear.
 4. Implementation is required when the task is not complete until files or concrete artifacts are changed.
-5. Independent review is required when the change is medium or high risk, crosses boundaries, changes orchestration or config behavior, touches four or more files, or lacks strong validation.
-6. Porting is required when the user wants behavior, code, or configuration moved from one repo into another repo or workspace.
-7. When uncertain whether discovery is needed, bias toward discovery.
-8. When uncertain whether review is needed, bias toward review only for medium or high-impact changes.
-9. For porting tasks, bias toward a heavier first pass that maps the complete feature surface before implementation starts.
+5. Documentation synchronization is required when the user asks for doc updates, touched behavior changes public or contributor-facing usage, or existing docs are likely stale relative to code, config, tests, or workflows.
+6. Independent review is required when the change is medium or high risk, crosses boundaries, changes orchestration or config behavior, touches four or more files, or lacks strong validation.
+7. Porting is required when the user wants behavior, code, or configuration moved from one repo into another repo or workspace.
+8. When uncertain whether discovery is needed, bias toward discovery.
+9. When uncertain whether docs sync is needed after implementation, bias toward a targeted docs check whenever README, API, setup, automation, or workflow docs may be affected.
+10. When uncertain whether review is needed, bias toward review only for medium or high-impact changes.
+11. For porting tasks, bias toward a heavier first pass that maps the complete feature surface before implementation starts.
 
 Sequencing policy:
 1. Treat the workflow as a coordinator-owned loop: evaluate state, delegate the next required stage, re-evaluate, and continue until completion gates are met.
@@ -42,9 +50,14 @@ Sequencing policy:
    - `direct_answer`: evaluate -> finalize
    - `explore_only`: evaluate -> explore -> evaluate -> finalize
    - `implement_only`: evaluate -> implement -> evaluate -> finalize
+   - `docs_only`: evaluate -> docs -> evaluate -> finalize
    - `explore_then_implement`: evaluate -> explore -> evaluate -> implement -> evaluate -> finalize
+   - `implement_then_docs`: evaluate -> implement -> evaluate -> docs -> evaluate -> finalize
+   - `explore_implement_docs`: evaluate -> explore -> evaluate -> implement -> evaluate -> docs -> evaluate -> finalize
    - `implement_then_review`: evaluate -> implement -> evaluate -> review -> evaluate -> finalize
+   - `implement_docs_review`: evaluate -> implement -> evaluate -> docs -> evaluate -> review -> evaluate -> finalize
    - `explore_implement_review`: evaluate -> explore -> evaluate -> implement -> evaluate -> review -> evaluate -> finalize
+   - `explore_implement_docs_review`: evaluate -> explore -> evaluate -> implement -> evaluate -> docs -> evaluate -> review -> evaluate -> finalize
    - `port_then_review`: evaluate -> port_explore -> evaluate -> port_implement -> evaluate -> port_review -> evaluate -> finalize
 3. For unresolved tasks, the coordinator may repeat evaluation, implementation, and review cycles when additional passes are justified by unresolved findings, incomplete validation, or materially improved understanding.
 4. Each additional cycle must produce a concrete delta: new evidence, narrower scope, resolved findings, or a smaller remaining risk set.
@@ -57,11 +70,12 @@ Completion gates:
 1. Do not finalize until all stages required by the current workflow class have completed and been synthesized by the coordinator.
 2. Do not finalize while any spawned sub-agent remains active or unclosed.
 3. If implementation was required, do not finalize until the worker has reported either a completed result or a clear no-change or blocked explanation.
-4. If implementation occurred, do not finalize until validation status is explicit, including checks run, checks not run, and remaining uncertainty.
-5. If review was required by classification or risk triggers, do not finalize until reviewer output has been received and considered.
-6. Do not finalize as complete while unresolved high-confidence reviewer findings remain.
-7. Do not finalize as complete while any agent-reported blocker remains unresolved; summarize the task as blocked instead.
-8. Finalize as complete only when no mandatory next stage remains and the remaining risks are understood and acceptable.
+4. If documentation synchronization was required, do not finalize until the docs agent has reported either synchronized docs or a clear blocked explanation.
+5. If implementation occurred, do not finalize until validation status is explicit, including checks run, checks not run, and remaining uncertainty.
+6. If review was required by classification or risk triggers, do not finalize until reviewer output has been received and considered.
+7. Do not finalize as complete while unresolved high-confidence reviewer findings remain.
+8. Do not finalize as complete while any agent-reported blocker remains unresolved; summarize the task as blocked instead.
+9. Finalize as complete only when no mandatory next stage remains and the remaining risks are understood and acceptable.
 
 Routing:
 1. Use the `explorer` agent for read-only codebase discovery, file/symbol lookup, config tracing, impact analysis, and root-cause investigation.
@@ -69,9 +83,11 @@ Routing:
 3. Use the `worker` agent for non-trivial file or config modifications, especially when the task has clear file boundaries or can be validated independently.
 4. Do not use `explorer` for file modifications; reserve implementation work for `worker` or direct coordinator action only when delegation overhead is not justified.
 5. Use the `reviewer` agent for risk-focused review, regression analysis, and validation-gap assessment on higher-stakes or ambiguous changes.
-6. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
-7. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
-8. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
+6. Use the `docs` agent for documentation synchronization, stale-claim cleanup, README or guide updates, and reconciling docs to code, config, tests, or workflows.
+7. After non-trivial implementation, explicitly evaluate whether docs that describe setup, usage, APIs, workflows, automations, or architecture now need updates.
+8. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+9. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+10. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -84,6 +100,25 @@ Delegation payload contract:
   - `return_format`: required response schema fields
   - `source_repo`: absolute path or repo identifier when porting is involved, otherwise `n/a`
   - `target_repo`: absolute path or repo identifier when porting is involved, otherwise `n/a`
+
+Docs delegation rules:
+- Use the `docs` agent when documentation must be synchronized to existing code or implementation changes.
+- Docs handoffs must identify the implementation files or behaviors that are the source of truth, plus the doc files that likely need updates.
+- Prefer docs work after implementation unless the task is a pure docs-sync correction with no code changes.
+
+Docs handoff template:
+- `docs`
+```text
+goal: synchronize repository documentation with the implemented code, config, tests, and workflows
+scope: modify only the documentation or explanatory artifacts needed to remove drift and clarify current behavior
+files: source-of-truth code/config/test files plus candidate docs such as README, docs pages, setup guides, API references, and contributor notes
+constraints: treat code, tests, and config as source of truth, remove stale claims, avoid inventing undocumented behavior, keep edits bounded
+execution_mode: apply
+source_repo: n/a
+target_repo: n/a
+done_criteria: update the relevant docs so they accurately reflect the current implementation and call out any truth gaps that require code changes
+return_format: summary, files_changed, stale_claims_fixed, checks_run, checks_not_run, residual_risks, blocked_by
+```
 
 Porting delegation rules:
 - For repo-to-repo transfer work, prefer the `port_then_review` workflow unless the task is trivially mechanical.
@@ -153,7 +188,7 @@ Scratchpad contract:
 ## Turn
 - Timestamp: <ISO-8601 timestamp>
 - User request: <one-line summary>
-- Workflow: <direct_answer|explore_only|implement_only|explore_then_implement|implement_then_review|explore_implement_review>
+- Workflow: <direct_answer|explore_only|implement_only|docs_only|explore_then_implement|implement_then_docs|explore_implement_docs|implement_then_review|implement_docs_review|explore_implement_review|explore_implement_docs_review|port_then_review>
 - Status: <in_progress|completed|blocked>
 
 ## Local Plan
@@ -164,7 +199,7 @@ Scratchpad contract:
   - <criterion>
 
 ## Agent: <agent-id>
-- Role: <default|explorer|worker|reviewer>
+- Role: <default|explorer|worker|reviewer|docs>
 - Status: <pending|in_progress|completed|blocked|closed>
 - Fork context: <true|false>
 - Write scope: <read-only|paths>
