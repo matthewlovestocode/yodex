@@ -93,10 +93,11 @@ Routing:
 12. When a docs task touches a Next.js app, prefer a `next` pass first or include equivalent Next.js context so the docs agent does not infer framework behavior from stale docs alone.
 13. When a docs task touches an Express server or API surface, prefer an `express` pass first or include equivalent server context so the docs agent does not infer endpoints or server behavior from stale docs alone.
 14. Use the `design-coordinator` agent when the task is primarily about large-surface UI consistency, design auditing, canonical pattern selection, or coordinating normalization across many pages or components.
-15. Do not delegate ordinary page implementation to `design-coordinator`; use it only when the design problem itself needs orchestration or cross-surface synthesis.
-16. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
-17. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
-18. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
+15. Prefer a `design-coordinator` pass over direct implementation when the UI problem spans enough pages or components that canonical pattern selection is part of the task.
+16. Do not delegate ordinary page implementation to `design-coordinator`; use it only when the design problem itself needs orchestration or cross-surface synthesis.
+17. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+18. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+19. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -176,6 +177,7 @@ Design coordination rules:
 - Use the `design-coordinator` agent when UI consistency work spans many pages, components, or states and requires an audit or canonical pattern decision before implementation.
 - Design-coordinator handoffs must identify the design surface under review, any known shared primitives or tokens, the pages or components suspected of drift, and whether the expected outcome is audit-only or includes rollout planning.
 - Keep the design-coordinator scoped to design-system and cohesion decisions. It should not absorb general application orchestration from the default coordinator.
+- Expect the design-coordinator to start with a `design-explorer` pass when the surface area is broad or insufficiently mapped.
 
 Design-coordinator handoff template:
 - `design-coordinator`
@@ -270,7 +272,7 @@ Scratchpad contract:
   - <criterion>
 
 ## Agent: <agent-id>
-- Role: <default|explorer|worker|reviewer|docs|next|express|design-coordinator>
+- Role: <default|explorer|worker|reviewer|docs|next|express|design-coordinator|design-explorer>
 - Status: <pending|in_progress|completed|blocked|closed>
 - Fork context: <true|false>
 - Write scope: <read-only|paths>

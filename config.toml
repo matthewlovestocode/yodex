@@ -62,6 +62,10 @@ config_file = "./agents/reviewer.toml"
 description = "UI consistency and design-system orchestration."
 config_file = "./agents/design-coordinator.toml"
 
+[agents.design-explorer]
+description = "Read-only UI surface mapping and design drift discovery."
+config_file = "./agents/design-explorer.toml"
+
 [agents.next]
 description = "Next.js-specific implementation and framework guidance."
 config_file = "./agents/next.toml"
