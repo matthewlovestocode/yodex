@@ -27,6 +27,11 @@
 !/agents/
 !/agents/**
 
+# Skills
+!/skills/
+!/skills/**
+skills/.system
+
 # Agent shell scripts
 !/scripts/
 !/scripts/**

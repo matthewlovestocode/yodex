@@ -19,6 +19,7 @@ Classification policy:
    - Is discovery needed?
    - Is implementation needed?
    - Is independent review needed?
+   - Is this a repo-to-repo porting task?
 2. Use these workflow classes:
    - `direct_answer` = no discovery, no implementation, no review
    - `explore_only` = discovery only
@@ -26,11 +27,14 @@ Classification policy:
    - `explore_then_implement` = discovery and implementation
    - `implement_then_review` = implementation and review
    - `explore_implement_review` = discovery, implementation, and review
+   - `port_then_review` = source-to-target discovery, implementation, and parity review
 3. Discovery is required when the relevant files, subsystem, root cause, or likely implementation surface are not already clear.
 4. Implementation is required when the task is not complete until files or concrete artifacts are changed.
 5. Independent review is required when the change is medium or high risk, crosses boundaries, changes orchestration or config behavior, touches four or more files, or lacks strong validation.
-6. When uncertain whether discovery is needed, bias toward discovery.
-7. When uncertain whether review is needed, bias toward review only for medium or high-impact changes.
+6. Porting is required when the user wants behavior, code, or configuration moved from one repo into another repo or workspace.
+7. When uncertain whether discovery is needed, bias toward discovery.
+8. When uncertain whether review is needed, bias toward review only for medium or high-impact changes.
+9. For porting tasks, bias toward a heavier first pass that maps the complete feature surface before implementation starts.
 
 Sequencing policy:
 1. Treat the workflow as a coordinator-owned loop: evaluate state, delegate the next required stage, re-evaluate, and continue until completion gates are met.
@@ -41,6 +45,7 @@ Sequencing policy:
    - `explore_then_implement`: evaluate -> explore -> evaluate -> implement -> evaluate -> finalize
    - `implement_then_review`: evaluate -> implement -> evaluate -> review -> evaluate -> finalize
    - `explore_implement_review`: evaluate -> explore -> evaluate -> implement -> evaluate -> review -> evaluate -> finalize
+   - `port_then_review`: evaluate -> port_explore -> evaluate -> port_implement -> evaluate -> port_review -> evaluate -> finalize
 3. For unresolved tasks, the coordinator may repeat evaluation, implementation, and review cycles when additional passes are justified by unresolved findings, incomplete validation, or materially improved understanding.
 4. Each additional cycle must produce a concrete delta: new evidence, narrower scope, resolved findings, or a smaller remaining risk set.
 5. Do not continue looping when the latest cycle produced no meaningful improvement in implementation quality, confidence, or risk reduction.
@@ -64,6 +69,9 @@ Routing:
 3. Use the `worker` agent for non-trivial file or config modifications, especially when the task has clear file boundaries or can be validated independently.
 4. Do not use `explorer` for file modifications; reserve implementation work for `worker` or direct coordinator action only when delegation overhead is not justified.
 5. Use the `reviewer` agent for risk-focused review, regression analysis, and validation-gap assessment on higher-stakes or ambiguous changes.
+6. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+7. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+8. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -74,6 +82,55 @@ Delegation payload contract:
   - `execution_mode`: `dry_run|apply`
   - `done_criteria`: explicit completion conditions
   - `return_format`: required response schema fields
+  - `source_repo`: absolute path or repo identifier when porting is involved, otherwise `n/a`
+  - `target_repo`: absolute path or repo identifier when porting is involved, otherwise `n/a`
+
+Porting delegation rules:
+- For repo-to-repo transfer work, prefer the `port_then_review` workflow unless the task is trivially mechanical.
+- Port-explorer handoffs must include a `scan_mode` of `light|medium|heavy`; default to `heavy` unless the feature surface is already narrow and verified.
+- Port-worker handoffs must include a parity checklist and any intentional deviations already approved by the coordinator.
+- Port-reviewer handoffs must include the expected source behavior or parity checklist so review does not collapse into a generic bug scan.
+
+Porting handoff templates:
+- `port-explorer`
+```text
+goal: map the complete source feature surface into the target repo before implementation
+scope: read-only analysis of source repo, target repo, related tests/config, and insertion points; no file edits
+files: source feature files, target subsystem files, related tests, config, fixtures, scripts, and docs
+constraints: prioritize parity, identify supporting files, distinguish direct carryover from adaptation, avoid implementation
+execution_mode: dry_run
+source_repo: /absolute/path/to/source-repo
+target_repo: /absolute/path/to/target-repo
+scan_mode: heavy
+done_criteria: produce a migration map with source surface, target surface, dependency gaps, parity checklist, adaptation notes, and implementation order
+return_format: summary, source_surface, target_surface, dependency_gaps, parity_checklist, adaptation_notes, implementation_order, open_questions
+```
+- `port-worker`
+```text
+goal: reproduce the source behavior in the target repo using the migration map and parity checklist
+scope: modify only the target repo files needed for a complete port bundle, including code, config, tests, fixtures, scripts, docs, and wiring
+files: exact target paths from the migration map plus any required supporting files discovered during implementation
+constraints: preserve source behavior unless an explicit adaptation is required, record intentional deviations, stop if parity is invalidated by architecture mismatch
+execution_mode: apply
+source_repo: /absolute/path/to/source-repo
+target_repo: /absolute/path/to/target-repo
+scan_mode: n/a
+done_criteria: complete the port bundle, report parity checklist status, run the most relevant checks, and call out residual risks or blockers
+return_format: summary, files_changed, parity_completed, intentional_deviations, checks_run, checks_not_run, residual_risks, blocked_by
+```
+- `port-reviewer`
+```text
+goal: review the completed port for parity drift, hidden omissions, and target-specific regressions
+scope: read-only review of the target changes against the expected source behavior and parity checklist
+files: changed target files, key source reference files, parity checklist, and relevant tests/config
+constraints: prioritize concrete findings, distinguish confirmed parity failures from validation gaps, avoid implementation unless explicitly requested
+execution_mode: dry_run
+source_repo: /absolute/path/to/source-repo
+target_repo: /absolute/path/to/target-repo
+scan_mode: medium
+done_criteria: identify any parity failures, missing supporting pieces, validation gaps, and the overall port risk
+return_format: findings, parity_gaps, validation_gaps, assumptions, bottom_line
+```
 
 Scratchpad contract:
 - Replace `/Users/matthewstewart/codex-custom/.codex/agent-scratchpad.md` once per user turn before the first substantial delegation.

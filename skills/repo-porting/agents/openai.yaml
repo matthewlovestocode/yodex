@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Porting"
+  short_description: "Port features across repos with parity checks."
+  default_prompt: "Port behavior from a source repo to a target repo using the repo-porting workflow."

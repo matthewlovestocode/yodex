@@ -68,6 +68,9 @@ After restart, confirm Codex is using this repository as its home:
    - `agents/explorer.toml`
    - `agents/worker.toml`
    - `agents/reviewer.toml`
+   - `agents/port-explorer.toml`
+   - `agents/port-worker.toml`
+   - `agents/port-reviewer.toml`
 
 You can also ask Codex something like:
 
@@ -87,10 +90,72 @@ agents/
   explorer.toml
   worker.toml
   reviewer.toml
+  port-explorer.toml
+  port-worker.toml
+  port-reviewer.toml
 skills/
 rules/
 memories/
 sessions/
+```
+
+## Porting Agents
+
+This repo now includes dedicated agents for repo-to-repo transfer work:
+
+- `agents/port-explorer.toml`: maps source behavior to target insertion points, supporting files, and parity requirements
+- `agents/port-worker.toml`: implements a complete port bundle, including supporting config, tests, and wiring
+- `agents/port-reviewer.toml`: reviews ports for parity drift, omitted dependencies, and target-specific regressions
+
+The default coordinator is instructed to prefer these agents for source-to-target transfer work instead of relying on the generic `explorer` and `worker` path.
+
+## Porting Handoff Templates
+
+Use these as the coordinator's default handoff shape for repo-to-repo transfer work.
+
+### `port-explorer`
+
+```text
+goal: map the complete source feature surface into the target repo before implementation
+scope: read-only analysis of source repo, target repo, related tests/config, and insertion points; no file edits
+files: source feature files, target subsystem files, related tests, config, fixtures, scripts, and docs
+constraints: prioritize parity, identify supporting files, distinguish direct carryover from adaptation, avoid implementation
+execution_mode: dry_run
+source_repo: /absolute/path/to/source-repo
+target_repo: /absolute/path/to/target-repo
+scan_mode: heavy
+done_criteria: produce a migration map with source surface, target surface, dependency gaps, parity checklist, adaptation notes, and implementation order
+return_format: summary, source_surface, target_surface, dependency_gaps, parity_checklist, adaptation_notes, implementation_order, open_questions
+```
+
+### `port-worker`
+
+```text
+goal: reproduce the source behavior in the target repo using the migration map and parity checklist
+scope: modify only the target repo files needed for a complete port bundle, including code, config, tests, fixtures, scripts, docs, and wiring
+files: exact target paths from the migration map plus any required supporting files discovered during implementation
+constraints: preserve source behavior unless an explicit adaptation is required, record intentional deviations, stop if parity is invalidated by architecture mismatch
+execution_mode: apply
+source_repo: /absolute/path/to/source-repo
+target_repo: /absolute/path/to/target-repo
+scan_mode: n/a
+done_criteria: complete the port bundle, report parity checklist status, run the most relevant checks, and call out residual risks or blockers
+return_format: summary, files_changed, parity_completed, intentional_deviations, checks_run, checks_not_run, residual_risks, blocked_by
+```
+
+### `port-reviewer`
+
+```text
+goal: review the completed port for parity drift, hidden omissions, and target-specific regressions
+scope: read-only review of the target changes against the expected source behavior and parity checklist
+files: changed target files, key source reference files, parity checklist, and relevant tests/config
+constraints: prioritize concrete findings, distinguish confirmed parity failures from validation gaps, avoid implementation unless explicitly requested
+execution_mode: dry_run
+source_repo: /absolute/path/to/source-repo
+target_repo: /absolute/path/to/target-repo
+scan_mode: medium
+done_criteria: identify any parity failures, missing supporting pieces, validation gaps, and the overall port risk
+return_format: findings, parity_gaps, validation_gaps, assumptions, bottom_line
 ```
 
 ## Notes
