@@ -70,6 +70,14 @@ config_file = "./agents/design-explorer.toml"
 description = "UI consistency implementation and design-system normalization."
 config_file = "./agents/design-builder.toml"
 
+[agents.design-reviewer]
+description = "Cross-surface UI consistency review and drift detection."
+config_file = "./agents/design-reviewer.toml"
+
+[agents.design-docs]
+description = "Design-system documentation synchronization and guidance updates."
+config_file = "./agents/design-docs.toml"
+
 [agents.next]
 description = "Next.js-specific implementation and framework guidance."
 config_file = "./agents/next.toml"

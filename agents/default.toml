@@ -95,10 +95,12 @@ Routing:
 14. Use the `design-coordinator` agent when the task is primarily about large-surface UI consistency, design auditing, canonical pattern selection, or coordinating normalization across many pages or components.
 15. Prefer a `design-coordinator` pass over direct implementation when the UI problem spans enough pages or components that canonical pattern selection is part of the task.
 16. Expect the `design-coordinator` to use `design-explorer` for read-only surface mapping and `design-builder` for bounded normalization work instead of trying to directly own all design implementation itself.
-17. Do not delegate ordinary page implementation to `design-coordinator`; use it only when the design problem itself needs orchestration or cross-surface synthesis.
-18. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
-19. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
-20. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
+17. Expect the `design-coordinator` to use `design-reviewer` when normalization or canonicalization work needs a dedicated consistency verification pass.
+18. Expect the `design-coordinator` to use `design-docs` when design-system decisions or normalized patterns should be captured in durable documentation.
+19. Do not delegate ordinary page implementation to `design-coordinator`; use it only when the design problem itself needs orchestration or cross-surface synthesis.
+20. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+21. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+22. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -180,6 +182,8 @@ Design coordination rules:
 - Keep the design-coordinator scoped to design-system and cohesion decisions. It should not absorb general application orchestration from the default coordinator.
 - Expect the design-coordinator to start with a `design-explorer` pass when the surface area is broad or insufficiently mapped.
 - Expect the design-coordinator to use `design-builder` for bounded normalization once canonical patterns and rollout priorities are explicit.
+- Expect the design-coordinator to use `design-reviewer` after meaningful normalization work or when cross-surface consistency still needs explicit verification.
+- Expect the design-coordinator to use `design-docs` when canonical patterns, component guidance, or intentional deviations need to be written back into design documentation.
 
 Design-coordinator handoff template:
 - `design-coordinator`
@@ -274,7 +278,7 @@ Scratchpad contract:
   - <criterion>
 
 ## Agent: <agent-id>
-- Role: <default|explorer|worker|reviewer|docs|next|express|design-coordinator|design-explorer|design-builder>
+- Role: <default|explorer|worker|reviewer|docs|next|express|design-coordinator|design-explorer|design-builder|design-reviewer|design-docs>
 - Status: <pending|in_progress|completed|blocked|closed>
 - Fork context: <true|false>
 - Write scope: <read-only|paths>
