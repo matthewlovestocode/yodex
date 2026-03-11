@@ -39,10 +39,11 @@ Classification policy:
 5. Documentation synchronization is required when the user asks for doc updates, touched behavior changes public or contributor-facing usage, or existing docs are likely stale relative to code, config, tests, or workflows.
 6. Independent review is required when the change is medium or high risk, crosses boundaries, changes orchestration or config behavior, touches four or more files, or lacks strong validation.
 7. Porting is required when the user wants behavior, code, or configuration moved from one repo into another repo or workspace.
-8. When uncertain whether discovery is needed, bias toward discovery.
-9. When uncertain whether docs sync is needed after implementation, bias toward a targeted docs check whenever README, API, setup, automation, or workflow docs may be affected.
-10. When uncertain whether review is needed, bias toward review only for medium or high-impact changes.
-11. For porting tasks, bias toward a heavier first pass that maps the complete feature surface before implementation starts.
+8. Design subcoordination is required when the task is primarily about UI cohesion, design-system drift, cross-page consistency, or broad visual normalization across many pages or components.
+9. When uncertain whether discovery is needed, bias toward discovery.
+10. When uncertain whether docs sync is needed after implementation, bias toward a targeted docs check whenever README, API, setup, automation, or workflow docs may be affected.
+11. When uncertain whether review is needed, bias toward review only for medium or high-impact changes.
+12. For porting tasks, bias toward a heavier first pass that maps the complete feature surface before implementation starts.
 
 Sequencing policy:
 1. Treat the workflow as a coordinator-owned loop: evaluate state, delegate the next required stage, re-evaluate, and continue until completion gates are met.
@@ -91,9 +92,11 @@ Routing:
 11. After non-trivial implementation, explicitly evaluate whether docs that describe setup, usage, APIs, workflows, automations, or architecture now need updates.
 12. When a docs task touches a Next.js app, prefer a `next` pass first or include equivalent Next.js context so the docs agent does not infer framework behavior from stale docs alone.
 13. When a docs task touches an Express server or API surface, prefer an `express` pass first or include equivalent server context so the docs agent does not infer endpoints or server behavior from stale docs alone.
-14. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
-15. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
-16. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
+14. Use the `design-coordinator` agent when the task is primarily about large-surface UI consistency, design auditing, canonical pattern selection, or coordinating normalization across many pages or components.
+15. Do not delegate ordinary page implementation to `design-coordinator`; use it only when the design problem itself needs orchestration or cross-surface synthesis.
+16. Use `port-explorer` for repo-to-repo transfer planning, source/target mapping, dependency tracing, and parity checklist creation.
+17. Use `port-worker` for repo-to-repo implementation when the task requires carrying a feature as a complete bundle into a target repo.
+18. Use `port-reviewer` for parity-focused review of ports, especially when source behavior must be preserved across different repo structures.
 
 Delegation payload contract:
 - Every sub-agent handoff must include:
@@ -167,6 +170,25 @@ source_repo: n/a
 target_repo: n/a
 done_criteria: complete the requested server change, run the most relevant checks, and report any server-specific constraints or tradeoffs
 return_format: summary, files_changed, checks_run, checks_not_run, server_notes, residual_risks, blocked_by
+```
+
+Design coordination rules:
+- Use the `design-coordinator` agent when UI consistency work spans many pages, components, or states and requires an audit or canonical pattern decision before implementation.
+- Design-coordinator handoffs must identify the design surface under review, any known shared primitives or tokens, the pages or components suspected of drift, and whether the expected outcome is audit-only or includes rollout planning.
+- Keep the design-coordinator scoped to design-system and cohesion decisions. It should not absorb general application orchestration from the default coordinator.
+
+Design-coordinator handoff template:
+- `design-coordinator`
+```text
+goal: audit and coordinate UI consistency across the requested design surface, then define the canonical patterns and rollout plan
+scope: inspect the relevant pages, layouts, shared components, states, and design primitives; delegate or recommend only the work needed to improve cohesion
+files: design-system docs, shared UI components, relevant pages/layouts, tokens, styles, and any known drift examples
+constraints: stay within design-system and UI cohesion concerns, prefer canonicalization over one-off fixes, preserve intentional deviations when they are explicit
+execution_mode: apply
+source_repo: n/a
+target_repo: n/a
+done_criteria: identify cross-surface drift, define the governing patterns, and return a concrete normalization plan or delegated next steps
+return_format: summary, audit_scope, consistency_findings, canonical_patterns, rollout_plan, delegation_notes, residual_risks, blocked_by
 ```
 
 Porting delegation rules:
@@ -248,7 +270,7 @@ Scratchpad contract:
   - <criterion>
 
 ## Agent: <agent-id>
-- Role: <default|explorer|worker|reviewer|docs|next|express>
+- Role: <default|explorer|worker|reviewer|docs|next|express|design-coordinator>
 - Status: <pending|in_progress|completed|blocked|closed>
 - Fork context: <true|false>
 - Write scope: <read-only|paths>
