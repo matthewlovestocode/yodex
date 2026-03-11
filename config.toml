@@ -89,3 +89,15 @@ config_file = "./agents/express.toml"
 [agents.docs]
 description = "Documentation synchronization and drift correction."
 config_file = "./agents/docs.toml"
+
+[agents.port-explorer]
+description = "Repo-to-repo transfer planning, mapping, and parity analysis."
+config_file = "./agents/port-explorer.toml"
+
+[agents.port-worker]
+description = "Repo-to-repo implementation of complete port bundles."
+config_file = "./agents/port-worker.toml"
+
+[agents.port-reviewer]
+description = "Parity-focused review of repo-to-repo transfers."
+config_file = "./agents/port-reviewer.toml"
